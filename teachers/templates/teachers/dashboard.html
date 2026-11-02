@@ -24,12 +24,17 @@
     </div>
     <div class="table-responsive mt-3">
         <table class="table">
-            <thead><tr><th>Course</th><th>Description</th><th>Students</th></tr></thead>
+            <thead><tr><th>Course</th><th>Description</th><th>Students</th><th>Course setup</th></tr></thead>
             <tbody>
             {% for course in courses %}
-                <tr><td>{{ course.title }}</td><td>{{ course.description|truncatewords:18 }}</td><td>{{ course.enrollment_set.count }}</td></tr>
+                <tr>
+                    <td>{{ course.title }}</td>
+                    <td>{{ course.description|truncatewords:18 }}</td>
+                    <td>{{ course.enrollment_set.count }}</td>
+                    <td><a class="btn btn-sm btn-outline-primary" href="{% url 'teachers:manage_course' course.id %}">Manage course, students &amp; class links</a></td>
+                </tr>
             {% empty %}
-                <tr><td colspan="3" class="text-secondary">Create a course to get started.</td></tr>
+                <tr><td colspan="4" class="text-secondary">Create a course to get started.</td></tr>
             {% endfor %}
             </tbody>
         </table>

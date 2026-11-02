@@ -22,8 +22,17 @@ def dashboard(request):
         messages.warning(request, 'Your student profile has not been set up yet.')
         return render(request, 'students/dashboard.html', {'student': None})
 
+    upcoming_course_classes = LiveClass.objects.filter(
+        starts_at__gte=timezone.now()
+    )
     courses = Course.objects.filter(enrollment__student=student).select_related(
         'teacher__user'
+    ).prefetch_related(
+        Prefetch(
+            'live_classes',
+            queryset=upcoming_course_classes,
+            to_attr='upcoming_live_classes',
+        )
     ).distinct()
     assignments = Assignment.objects.filter(
         course__enrollment__student=student
@@ -77,7 +86,7 @@ def course_list(request):
         )
     return render(
         request,
-        'students/courselist.html',
+        'students/course_list.html',
         {'courses': courses, 'resources': resources},
     )
 

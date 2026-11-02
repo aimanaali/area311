@@ -15,6 +15,32 @@
     <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">Assignments</div><div class="fs-3 fw-bold">{{ assignments.count }}</div></div></div>
     <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">Graded progress</div><div class="fs-3 fw-bold">{% if progress != None %}{{ progress }}%{% else %}—{% endif %}</div></div></div>
 </div>
+<section class="card p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <h2 class="h5 mb-0">My enrolled courses</h2>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'students:course_list' %}">Open study materials</a>
+    </div>
+    <div class="row g-3">
+        {% for course in courses %}
+            <div class="col-lg-6">
+                <article class="border rounded-3 p-3 h-100">
+                    <h3 class="h6 mb-1">{{ course.title }}</h3>
+                    <p class="small text-secondary mb-2">Teacher: {{ course.teacher.user.get_full_name|default:course.teacher.user.username }}</p>
+                    {% for live_class in course.upcoming_live_classes %}
+                        <div class="border-top py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <span><strong>{{ live_class.title }}</strong><span class="d-block small text-secondary">{{ live_class.starts_at }}</span></span>
+                            <a class="btn btn-sm btn-success" href="{{ live_class.meet_url }}" target="_blank" rel="noopener noreferrer">Join class</a>
+                        </div>
+                    {% empty %}
+                        <p class="small text-secondary mb-0">No upcoming class link yet. Your teacher will add it here.</p>
+                    {% endfor %}
+                </article>
+            </div>
+        {% empty %}
+            <div class="col"><p class="text-secondary mb-0">You are not enrolled in a course yet. Ask your teacher to enroll you.</p></div>
+        {% endfor %}
+    </div>
+</section>
 <div class="row g-4">
     <div class="col-lg-6">
         <section class="card p-4 h-100">

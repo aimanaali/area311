@@ -12,7 +12,7 @@ from courses.forms import (
     LessonForm,
     LiveClassForm,
 )
-from courses.models import Assignment, Course, LiveClass, Submission
+from courses.models import Assignment, Course, Enrollment, LiveClass, Submission
 from students.models import Student
 
 from .models import Teacher
@@ -76,6 +76,28 @@ def create_course(request):
 
 
 @role_required(User.Role.TEACHER)
+def manage_course(request, course_id):
+    teacher = _teacher_for_user(request.user)
+    course = get_object_or_404(
+        Course.objects.filter(teacher=teacher).select_related('teacher__user'),
+        pk=course_id,
+    )
+    enrollments = Enrollment.objects.filter(course=course).select_related(
+        'student__user'
+    ).order_by('student__user__last_name', 'student__user__first_name')
+    live_classes = LiveClass.objects.filter(course=course)
+    return render(
+        request,
+        'teachers/course_detail.html',
+        {
+            'course': course,
+            'enrollments': enrollments,
+            'live_classes': live_classes,
+        },
+    )
+
+
+@role_required(User.Role.TEACHER)
 def create_lesson(request):
     teacher = _teacher_for_user(request.user)
     courses = Course.objects.filter(teacher=teacher)
@@ -88,7 +110,7 @@ def create_lesson(request):
 
 
 @role_required(User.Role.TEACHER)
-def create_live_class(request, live_class_id=None):
+def create_live_class(request, live_class_id=None, course_id=None):
     teacher = _teacher_for_user(request.user)
     courses = Course.objects.filter(teacher=teacher)
     live_class = None
@@ -98,7 +120,16 @@ def create_live_class(request, live_class_id=None):
             pk=live_class_id,
             course__teacher=teacher,
         )
-    form = LiveClassForm(request.POST or None, instance=live_class, courses=courses)
+        course_id = live_class.course_id
+    elif course_id is not None:
+        get_object_or_404(courses, pk=course_id)
+    initial = {'course': course_id} if course_id is not None else None
+    form = LiveClassForm(
+        request.POST or None,
+        instance=live_class,
+        initial=initial,
+        courses=courses,
+    )
     if request.method == 'POST' and form.is_valid():
         form.save()
         messages.success(request, 'Live class schedule saved.')
@@ -134,12 +165,16 @@ def create_assignment(request):
 
 
 @role_required(User.Role.TEACHER)
-def enroll_student(request):
+def enroll_student(request, course_id=None):
     teacher = _teacher_for_user(request.user)
     courses = Course.objects.filter(teacher=teacher)
+    if course_id is not None:
+        get_object_or_404(courses, pk=course_id)
     students = Student.objects.filter(user__role=User.Role.STUDENT).select_related('user')
+    initial = {'course': course_id} if course_id is not None else None
     form = EnrollmentForm(
         request.POST or None,
+        initial=initial,
         courses=courses,
         students=students,
     )
