@@ -1,0 +1,77 @@
+{% extends "accounts/base.html" %}
+{% block title %}Teacher portal | Area311 LMS{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div><h1 class="h3 mb-1">Teacher portal</h1><p class="text-secondary mb-0">Welcome, {{ request.user.get_full_name|default:request.user.username }} · {{ teacher.subject }}</p></div>
+    <a class="btn btn-outline-primary" href="{% url 'accounts:messages' %}">Open communication hub</a>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">My courses</div><div class="fs-3 fw-bold">{{ course_count }}</div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">Upcoming lectures</div><div class="fs-3 fw-bold">{{ live_classes.count }}</div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">Assignments</div><div class="fs-3 fw-bold">{{ assignments.count }}</div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">Submissions to grade</div><div class="fs-3 fw-bold">{{ pending_submission_count }}</div></div></div>
+</div>
+<section class="card p-4 mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <h2 class="h5 mb-0">Class management</h2>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-sm btn-primary" href="{% url 'teachers:create_course' %}">New course</a>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'teachers:create_lesson' %}">Add study material</a>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'teachers:create_live_class' %}">Schedule live class</a>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'teachers:create_assignment' %}">New assignment</a>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'teachers:enroll_student' %}">Enroll student</a>
+        </div>
+    </div>
+    <div class="table-responsive mt-3">
+        <table class="table">
+            <thead><tr><th>Course</th><th>Description</th><th>Students</th></tr></thead>
+            <tbody>
+            {% for course in courses %}
+                <tr><td>{{ course.title }}</td><td>{{ course.description|truncatewords:18 }}</td><td>{{ course.enrollment_set.count }}</td></tr>
+            {% empty %}
+                <tr><td colspan="3" class="text-secondary">Create a course to get started.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <section class="card p-4 h-100">
+            <h2 class="h5">Lecture schedule</h2>
+            {% for live_class in live_classes %}
+                <article class="border-top py-3">
+                    <strong>{{ live_class.title }}</strong><div class="text-secondary">{{ live_class.course.title }} · {{ live_class.starts_at }}</div>
+                    <div class="d-flex gap-2 mt-2">
+                        <a class="btn btn-sm btn-outline-primary" href="{% url 'teachers:edit_live_class' live_class.id %}">Reschedule / edit</a>
+                        <form method="post" action="{% url 'teachers:cancel_live_class' live_class.id %}">
+                            {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Cancel class</button>
+                        </form>
+                    </div>
+                </article>
+            {% empty %}
+                <p class="text-secondary mb-0">No upcoming lectures scheduled.</p>
+            {% endfor %}
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="card p-4 h-100">
+            <h2 class="h5">Assignments and grading</h2>
+            {% for assignment in assignments %}
+                <article class="border-top py-3"><strong>{{ assignment.title }}</strong><div class="text-secondary">{{ assignment.course.title }} · Due {{ assignment.due_date }} · {{ assignment.max_points }} points</div></article>
+            {% empty %}
+                <p class="text-secondary">No assignments published.</p>
+            {% endfor %}
+            <h3 class="h6 mt-3">Student submissions</h3>
+            {% for submission in submissions %}
+                <article class="border-top py-2 d-flex justify-content-between align-items-center gap-2">
+                    <span>{{ submission.student.user.get_full_name|default:submission.student.user.username }} · {{ submission.assignment.title }}{% if submission.score != None %} · {{ submission.score }}/{{ submission.assignment.max_points }}{% else %} · Needs grading{% endif %}</span>
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'teachers:grade_submission' submission.id %}">Grade</a>
+                </article>
+            {% empty %}
+                <p class="text-secondary mb-0">No submissions received yet.</p>
+            {% endfor %}
+        </section>
+    </div>
+</div>
+{% endblock %}

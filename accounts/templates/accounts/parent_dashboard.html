@@ -1,0 +1,54 @@
+{% extends "accounts/base.html" %}
+{% block title %}Parent portal | Area311 LMS{% endblock %}
+{% block content %}
+<h1 class="h3 mb-1">Parent portal</h1>
+<p class="text-secondary mb-4">Children's courses, progress, and fee status.</p>
+{% for child in children %}
+<section class="card p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div><h2 class="h5 mb-1">{{ child.user.get_full_name|default:child.user.username }}</h2><p class="text-secondary mb-0">Student ID {{ child.student_id }} · Grade {{ child.grade }}</p></div>
+    </div>
+    <div class="row g-4 mt-1">
+        <div class="col-lg-6">
+            <h3 class="h6">Course progress and teacher contact</h3>
+            {% for enrollment in child.enrollment_set.all %}
+                <article class="border-top py-2">
+                    <strong>{{ enrollment.course.title }}</strong>
+                    <div class="small text-secondary">Teacher: {{ enrollment.course.teacher.user.get_full_name|default:enrollment.course.teacher.user.username }}</div>
+                    <a class="small" href="{% url 'accounts:messages' %}">Contact a teacher</a>
+                </article>
+            {% empty %}
+                <p class="text-secondary">No course enrollments yet.</p>
+            {% endfor %}
+            <h3 class="h6 mt-4">Assignment reports</h3>
+            {% for submission in child.submissions.all %}
+                <article class="border-top py-2">
+                    {{ submission.assignment.title }} — {{ submission.assignment.course.title }}
+                    {% if submission.score != None %}
+                        <span class="badge text-bg-success">{{ submission.score }}/{{ submission.assignment.max_points }}</span>
+                    {% else %}
+                        <span class="badge text-bg-secondary">Awaiting grade</span>
+                    {% endif %}
+                    {% if submission.feedback %}<div class="small text-secondary mt-1">{{ submission.feedback }}</div>{% endif %}
+                </article>
+            {% empty %}
+                <p class="text-secondary">No assignment submissions yet.</p>
+            {% endfor %}
+        </div>
+        <div class="col-lg-6">
+            <h3 class="h6">Fee payment status</h3>
+            {% for fee in child.fee_records.all %}
+                <div class="border-top py-2 d-flex justify-content-between gap-2">
+                    <span>{{ fee.description }} · {{ fee.due_date }} · {{ fee.amount }}</span>
+                    {% if fee.status == 'paid' %}<span class="badge text-bg-success">Paid</span>{% else %}<span class="badge text-bg-warning">Due</span>{% endif %}
+                </div>
+            {% empty %}
+                <p class="text-secondary">No fee records are available.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% empty %}
+<div class="card p-4 text-secondary">No students are linked to your parent account yet. Please contact the administrator.</div>
+{% endfor %}
+{% endblock %}

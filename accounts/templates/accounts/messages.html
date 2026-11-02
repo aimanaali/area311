@@ -1,0 +1,53 @@
+{% extends "accounts/base.html" %}
+{% block title %}Messages | Area311 LMS{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Communication hub</h1>
+        <p class="text-secondary mb-0">Contact teachers, students, and parents.</p>
+    </div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-5">
+        <section class="card p-4">
+            <h2 class="h5 mb-3">Compose a message</h2>
+            <form method="post">
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {{ field.errors }}
+                    </div>
+                {% endfor %}
+                <button class="btn btn-primary" type="submit">Send message</button>
+            </form>
+        </section>
+    </div>
+    <div class="col-lg-7">
+        <section class="card p-4 mb-4">
+            <h2 class="h5">Inbox</h2>
+            {% for item in incoming %}
+                <article class="border-top py-3">
+                    <div class="d-flex justify-content-between"><strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong><small class="text-secondary">{{ item.created_at }}</small></div>
+                    <p class="mb-0 mt-2">{{ item.body|linebreaksbr }}</p>
+                </article>
+            {% empty %}
+                <p class="text-secondary mb-0">No messages yet.</p>
+            {% endfor %}
+        </section>
+        <section class="card p-4">
+            <h2 class="h5">Sent</h2>
+            {% for item in outgoing %}
+                <article class="border-top py-3">
+                    <div class="d-flex justify-content-between"><strong>To {{ item.recipient.get_full_name|default:item.recipient.username }}</strong><small class="text-secondary">{{ item.created_at }}</small></div>
+                    <p class="mb-0 mt-2">{{ item.body|linebreaksbr }}</p>
+                </article>
+            {% empty %}
+                <p class="text-secondary mb-0">No messages sent yet.</p>
+            {% endfor %}
+        </section>
+    </div>
+</div>
+{% endblock %}

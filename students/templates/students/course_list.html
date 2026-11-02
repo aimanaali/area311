@@ -1,0 +1,42 @@
+{% extends "accounts/base.html" %}
+{% block title %}Study library | Area311 LMS{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Digital library and courses</h1>
+<section class="card p-4 mb-4">
+    <h2 class="h5">Punjab textbooks and digital books</h2>
+    <p class="text-secondary">Official Punjab curriculum resources. Availability and textbook editions may vary by grade.</p>
+    <div class="list-group list-group-flush">
+        {% for resource in resources %}
+            <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-3 px-0"
+               href="{{ resource.url }}" target="_blank" rel="noopener noreferrer">
+                <span><strong>{{ resource.title }}</strong><span class="d-block small text-secondary">{{ resource.publisher }}{% if resource.subject %} · {{ resource.subject }}{% endif %}</span></span>
+                <span class="btn btn-sm btn-outline-primary">Open book portal</span>
+            </a>
+        {% empty %}
+            <p class="text-secondary mb-0">No textbook links are available for this grade yet.</p>
+        {% endfor %}
+    </div>
+</section>
+<div class="row g-4">
+    {% for course in courses %}
+        <div class="col-lg-6">
+            <section class="card p-4 h-100">
+                <h2 class="h5">{{ course.title }}</h2>
+                <p class="text-secondary">{{ course.description }}</p>
+                <p class="small mb-3">Teacher: {{ course.teacher.user.get_full_name|default:course.teacher.user.username }}</p>
+                <h3 class="h6">Notes and study materials</h3>
+                {% for lesson in course.lessons.all %}
+                    <article class="border-top py-3">
+                        <strong>{{ lesson.order }}. {{ lesson.title }}</strong>
+                        <div class="mt-1">{{ lesson.content|linebreaksbr }}</div>
+                    </article>
+                {% empty %}
+                    <p class="text-secondary mb-0">No materials have been added to this course yet.</p>
+                {% endfor %}
+            </section>
+        </div>
+    {% empty %}
+        <div class="col"><div class="card p-4 text-secondary">You are not enrolled in any courses yet. Contact your teacher or administrator.</div></div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "accounts/base.html" %}
+{% block title %}Student portal | Area311 LMS{% endblock %}
+{% block content %}
+{% if student %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h1 class="h3 mb-1">Student portal</h1>
+        <p class="text-secondary mb-0">Welcome, {{ request.user.get_full_name|default:request.user.username }} · Grade {{ student.grade }}</p>
+    </div>
+    <a class="btn btn-outline-primary" href="{% url 'students:course_list' %}">Open study library</a>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">My courses</div><div class="fs-3 fw-bold">{{ courses.count }}</div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">Upcoming live classes</div><div class="fs-3 fw-bold">{{ live_classes.count }}</div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">Assignments</div><div class="fs-3 fw-bold">{{ assignments.count }}</div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">Graded progress</div><div class="fs-3 fw-bold">{% if progress != None %}{{ progress }}%{% else %}—{% endif %}</div></div></div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <section class="card p-4 h-100">
+            <h2 class="h5">Live classes</h2>
+            {% for live_class in live_classes %}
+                <article class="border-top py-3">
+                    <div class="d-flex flex-wrap justify-content-between gap-2">
+                        <div><strong>{{ live_class.title }}</strong><div class="text-secondary">{{ live_class.course.title }} · {{ live_class.starts_at }}</div></div>
+                        <a class="btn btn-sm btn-success align-self-center" href="{{ live_class.meet_url }}" target="_blank" rel="noopener noreferrer">Join Google Meet</a>
+                    </div>
+                </article>
+            {% empty %}
+                <p class="text-secondary mb-0">No upcoming classes are scheduled for your courses.</p>
+            {% endfor %}
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="card p-4 h-100">
+            <h2 class="h5">Assignments and progress</h2>
+            {% for assignment in assignments %}
+                <article class="border-top py-3">
+                    <div class="d-flex justify-content-between gap-2">
+                        <div><strong>{{ assignment.title }}</strong><div class="text-secondary">{{ assignment.course.title }} · Due {{ assignment.due_date }}</div></div>
+                        {% with submission=assignment.student_submissions|first %}
+                            <div class="text-end">
+                                {% if submission %}
+                                    {% if submission.score != None %}
+                                        <span class="badge text-bg-success">{{ submission.score }}/{{ assignment.max_points }}</span>
+                                    {% else %}
+                                        <span class="badge text-bg-info">Submitted</span>
+                                    {% endif %}
+                                    <a class="d-block small mt-1" href="{% url 'students:submit_assignment' assignment.id %}">View response</a>
+                                {% else %}
+                                    <a class="btn btn-sm btn-outline-primary" href="{% url 'students:submit_assignment' assignment.id %}">Submit</a>
+                                {% endif %}
+                            </div>
+                        {% endwith %}
+                    </div>
+                </article>
+            {% empty %}
+                <p class="text-secondary mb-0">No assignments have been published for your courses.</p>
+            {% endfor %}
+        </section>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning">Your student profile has not been set up yet. Please contact the administrator.</div>
+{% endif %}
+{% endblock %}
