@@ -11,6 +11,12 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from django.core.exceptions import ImproperlyConfigured
+from django.core.management.utils import get_random_secret_key
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,16 +25,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-8w=hukkop01zvir+igjb!7^1fzhtroco)9%76eq@0q4bym7+#q'
+DEBUG = os.getenv('DEBUG', 'False').strip().lower() in {'true', '1', 'yes'}
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = get_random_secret_key()
+    else:
+        raise ImproperlyConfigured('Set SECRET_KEY in the environment or .env file.')
 
-# ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+default_allowed_hosts = (
+    '127.0.0.1,localhost,aimansolutionslms.pythonanywhere.com'
+    if DEBUG
+    else 'aimansolutionslms.pythonanywhere.com'
+)
 ALLOWED_HOSTS = [
-    'aimansolutionslms.pythonanywhere.com',
+    host.strip()
+    for host in os.getenv('ALLOWED_HOSTS', default_allowed_hosts).split(',')
+    if host.strip()
 ]
+if 'aimansolutionslms.pythonanywhere.com' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('aimansolutionslms.pythonanywhere.com')
+if not ALLOWED_HOSTS and not DEBUG:
+    raise ImproperlyConfigured('Set ALLOWED_HOSTS in the environment or .env file.')
 
 # Application definition
 
@@ -118,7 +137,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

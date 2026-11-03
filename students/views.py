@@ -18,14 +18,18 @@ def _student_for_user(user):
 @role_required(User.Role.STUDENT)
 def dashboard(request):
     student = _student_for_user(request.user)
-    if student is None:
+    is_admin_view = request.user.is_superuser
+    if student is None and not is_admin_view:
         messages.warning(request, 'Your student profile has not been set up yet.')
         return render(request, 'students/dashboard.html', {'student': None})
 
     upcoming_course_classes = LiveClass.objects.filter(
         starts_at__gte=timezone.now()
     )
-    courses = Course.objects.filter(enrollment__student=student).select_related(
+    courses = Course.objects.all() if is_admin_view else Course.objects.filter(
+        enrollment__student=student
+    )
+    courses = courses.select_related(
         'teacher__user'
     ).prefetch_related(
         Prefetch(
@@ -34,22 +38,24 @@ def dashboard(request):
             to_attr='upcoming_live_classes',
         )
     ).distinct()
-    assignments = Assignment.objects.filter(
+    assignments = Assignment.objects.all() if is_admin_view else Assignment.objects.filter(
         course__enrollment__student=student
-    ).select_related('course').prefetch_related(
+    )
+    assignments = assignments.select_related('course').prefetch_related(
         Prefetch(
             'submissions',
-            queryset=Submission.objects.filter(student=student),
+            queryset=Submission.objects.filter(student=student) if student else Submission.objects.none(),
             to_attr='student_submissions',
         )
     )
-    live_classes = LiveClass.objects.filter(
-        course__enrollment__student=student,
-        starts_at__gte=timezone.now(),
-    ).select_related('course')
-    graded_submissions = student.submissions.filter(
-        score__isnull=False
-    ).select_related('assignment')
+    live_classes = LiveClass.objects.filter(starts_at__gte=timezone.now())
+    if not is_admin_view:
+        live_classes = live_classes.filter(course__enrollment__student=student)
+    live_classes = live_classes.select_related('course__teacher__user')
+    graded_submissions = (
+        student.submissions.filter(score__isnull=False).select_related('assignment')
+        if student else Submission.objects.none()
+    )
     progress = None
     if graded_submissions.exists():
         scores = list(graded_submissions)
@@ -64,6 +70,7 @@ def dashboard(request):
         'students/dashboard.html',
         {
             'student': student,
+            'is_admin_view': is_admin_view,
             'courses': courses,
             'assignments': assignments,
             'live_classes': live_classes,
@@ -77,7 +84,10 @@ def course_list(request):
     student = _student_for_user(request.user)
     courses = Course.objects.none()
     resources = StudyResource.objects.none()
-    if student is not None:
+    if request.user.is_superuser:
+        courses = Course.objects.select_related('teacher__user').prefetch_related('lessons')
+        resources = StudyResource.objects.all()
+    elif student is not None:
         courses = Course.objects.filter(
             enrollment__student=student
         ).select_related('teacher__user').prefetch_related('lessons').distinct()

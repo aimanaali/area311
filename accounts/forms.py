@@ -12,7 +12,9 @@ class PortalUserCreationForm(UserCreationForm):
     student_id = forms.CharField(max_length=20, required=False)
     grade = forms.CharField(max_length=10, required=False)
     employee_id = forms.CharField(max_length=20, required=False)
-    subject = forms.CharField(max_length=50, required=False)
+    subject = forms.CharField(max_length=50, required=False, label='Subject 1')
+    subject_2 = forms.CharField(max_length=50, required=False, label='Subject 2')
+    subject_3 = forms.CharField(max_length=50, required=False, label='Subject 3')
     children = forms.ModelMultipleChoiceField(
         queryset=Student.objects.select_related('user').order_by('user__username'),
         required=False,
@@ -32,6 +34,14 @@ class PortalUserCreationForm(UserCreationForm):
         for field in required_by_role.get(role, ()):
             if not cleaned_data.get(field):
                 self.add_error(field, 'This field is required for this account role.')
+        if role == User.Role.TEACHER:
+            subjects = [
+                cleaned_data.get(field, '').strip().casefold()
+                for field in ('subject', 'subject_2', 'subject_3')
+                if cleaned_data.get(field, '').strip()
+            ]
+            if len(subjects) != len(set(subjects)):
+                self.add_error(None, 'Enter each teacher subject only once.')
         if role == User.Role.STUDENT:
             student_id = cleaned_data.get('student_id')
             if student_id and Student.objects.filter(student_id=student_id).exists():
@@ -62,7 +72,9 @@ class PortalUserCreationForm(UserCreationForm):
                     Teacher.objects.create(
                         user=user,
                         employee_id=self.cleaned_data['employee_id'],
-                        subject=self.cleaned_data['subject'],
+                        subject=self.cleaned_data['subject'].strip(),
+                        subject_2=self.cleaned_data['subject_2'].strip(),
+                        subject_3=self.cleaned_data['subject_3'].strip(),
                     )
                 else:
                     parent = Parent.objects.create(user=user)

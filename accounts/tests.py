@@ -42,6 +42,7 @@ class PortalWorkflowTests(TestCase):
         self.parent.children.add(self.student)
         self.course = Course.objects.create(
             title='Science 8',
+            subject='Science',
             description='Core science course',
             teacher=self.teacher,
         )
@@ -99,6 +100,53 @@ class PortalWorkflowTests(TestCase):
         self.assertRedirects(response, reverse('accounts:dashboard_redirect'), fetch_redirect_response=False)
         response = self.client.get(reverse('accounts:dashboard_redirect'))
         self.assertRedirects(response, reverse('students:dashboard'))
+
+    def test_login_can_remember_session_for_30_days(self):
+        response = self.client.post(
+            reverse('accounts:login'),
+            {
+                'username': self.student_user.username,
+                'password': 'Safe-test-pass-123!',
+                'remember_me': 'on',
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('accounts:dashboard_redirect'),
+            fetch_redirect_response=False,
+        )
+        self.assertGreater(
+            self.client.session.get_expiry_age(),
+            30 * 24 * 60 * 60 - 10,
+        )
+        self.assertLessEqual(
+            self.client.session.get_expiry_age(),
+            30 * 24 * 60 * 60,
+        )
+
+    def test_login_without_remember_me_uses_browser_session_cookie(self):
+        response = self.client.post(
+            reverse('accounts:login'),
+            {
+                'username': self.student_user.username,
+                'password': 'Safe-test-pass-123!',
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('accounts:dashboard_redirect'),
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(self.client.session.get_expire_at_browser_close(), True)
+
+    def test_login_page_enables_browser_password_autofill(self):
+        response = self.client.get(reverse('accounts:login'))
+
+        self.assertContains(response, 'autocomplete="username"')
+        self.assertContains(response, 'autocomplete="current-password"')
+        self.assertContains(response, 'name="remember_me"')
 
     def test_student_sees_database_course_assignment_and_meet_link(self):
         live_class = LiveClass.objects.create(
@@ -237,6 +285,8 @@ class PortalWorkflowTests(TestCase):
                 'grade': '7',
                 'employee_id': '',
                 'subject': '',
+                'subject_2': '',
+                'subject_3': '',
                 'password1': 'Safe-test-pass-456!',
                 'password2': 'Safe-test-pass-456!',
             },
@@ -245,3 +295,101 @@ class PortalWorkflowTests(TestCase):
         created_user = User.objects.get(username='new-student')
         self.assertEqual(created_user.role, User.Role.STUDENT)
         self.assertEqual(created_user.student.student_id, 'S-200')
+
+    def test_admin_can_create_teacher_with_three_subject_categories(self):
+        admin_user = User.objects.create_superuser(
+            username='teacher-admin',
+            email='teacher-admin@example.test',
+            password='Safe-test-pass-123!',
+        )
+        self.client.force_login(admin_user)
+
+        response = self.client.post(
+            reverse('accounts:admin_dashboard'),
+            {
+                'action': 'create_account',
+                'username': 'multi-subject-teacher',
+                'first_name': 'Rehman',
+                'last_name': 'Teacher',
+                'email': 'rehman@example.test',
+                'role': User.Role.TEACHER,
+                'employee_id': 'T-300',
+                'subject': 'English',
+                'subject_2': 'Mathematics',
+                'subject_3': 'Urdu',
+                'student_id': '',
+                'grade': '',
+                'password1': 'Safe-test-pass-456!',
+                'password2': 'Safe-test-pass-456!',
+            },
+        )
+
+        self.assertRedirects(response, reverse('accounts:admin_dashboard'))
+        teacher = User.objects.get(username='multi-subject-teacher').teacher
+        self.assertEqual(
+            teacher.subjects,
+            ['English', 'Mathematics', 'Urdu'],
+        )
+
+    def test_admin_can_enroll_a_student_in_a_subject_course(self):
+        admin_user = User.objects.create_superuser(
+            username='enrollment-admin',
+            email='enrollment-admin@example.test',
+            password='Safe-test-pass-123!',
+        )
+        self.teacher.subject_2 = 'English'
+        self.teacher.save(update_fields=['subject_2'])
+        english_course = Course.objects.create(
+            title='English 8',
+            subject='English',
+            description='Core English course',
+            teacher=self.teacher,
+        )
+        self.client.force_login(admin_user)
+
+        response = self.client.post(
+            reverse('accounts:admin_dashboard'),
+            {
+                'action': 'enroll',
+                'student': self.student.pk,
+                'course': english_course.pk,
+            },
+        )
+
+        self.assertRedirects(response, reverse('accounts:admin_dashboard'))
+        self.assertTrue(
+            Enrollment.objects.filter(student=self.student, course=english_course).exists()
+        )
+
+    def test_admin_can_open_live_class_schedule_management(self):
+        admin_user = User.objects.create_superuser(
+            username='schedule-admin',
+            email='schedule-admin@example.test',
+            password='Safe-test-pass-123!',
+        )
+        self.client.force_login(admin_user)
+
+        response = self.client.get(reverse('accounts:admin_dashboard'))
+        self.assertContains(response, 'Upcoming live classes')
+        self.assertContains(response, reverse('admin:courses_liveclass_add'))
+        self.assertEqual(
+            self.client.get(reverse('admin:courses_liveclass_changelist')).status_code,
+            200,
+        )
+        self.assertEqual(
+            self.client.get(reverse('admin:courses_liveclass_add')).status_code,
+            200,
+        )
+
+    def test_admin_can_view_parent_reports_for_all_students(self):
+        admin_user = User.objects.create_superuser(
+            username='reports-admin',
+            email='reports-admin@example.test',
+            password='Safe-test-pass-123!',
+        )
+        self.client.force_login(admin_user)
+
+        response = self.client.get(reverse('accounts:parent_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.student.student_id)

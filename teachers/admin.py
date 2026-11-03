@@ -5,7 +5,7 @@ from .models import Teacher
 
 @admin.register(Teacher)
 class TeacherAdmin(admin.ModelAdmin):
-    list_display = ('employee_id', 'user', 'subject', 'phone_number')
+    list_display = ('employee_id', 'user', 'subject', 'subject_2', 'subject_3', 'phone_number')
     search_fields = (
         'employee_id',
         'user__username',
@@ -13,4 +13,4 @@ class TeacherAdmin(admin.ModelAdmin):
         'user__last_name',
         'user__email',
     )
-    list_filter = ('subject',)
+    list_filter = ('subject', 'subject_2', 'subject_3')

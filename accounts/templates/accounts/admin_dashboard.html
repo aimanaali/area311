@@ -8,14 +8,39 @@
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">All accounts</div><div class="fs-3 fw-bold">{{ user_count }}</div><div class="small">Students {{ student_count }} · Teachers {{ teacher_count }} · Parents {{ parent_count }}</div></div></div>
     <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">Courses</div><div class="fs-3 fw-bold">{{ course_count }}</div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">Upcoming live classes</div><div class="fs-3 fw-bold">{{ live_class_count }}</div></div></div>
     <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">Ungraded submissions</div><div class="fs-3 fw-bold">{{ submission_count }}</div></div></div>
     <div class="col-sm-6 col-xl-3"><div class="card stat p-3"><div class="text-secondary">Fee records due</div><div class="fs-3 fw-bold">{{ fees_due }}</div></div></div>
 </div>
+<section class="card p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h2 class="h5 mb-1">Upcoming live classes</h2>
+            <p class="text-secondary mb-0">Manage the schedule available to enrolled students.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'admin:courses_liveclass_changelist' %}">Manage schedule</a>
+            <a class="btn btn-sm btn-primary" href="{% url 'admin:courses_liveclass_add' %}">Schedule a class</a>
+        </div>
+    </div>
+    {% for live_class in upcoming_live_classes %}
+        <article class="border-top mt-3 pt-3">
+            <strong>{{ live_class.title }}</strong>
+            <div class="text-secondary">
+                {{ live_class.course.title }} · {{ live_class.course.subject }} ·
+                {{ live_class.starts_at|date:"D, M j, Y · g:i A T" }}
+            </div>
+        </article>
+    {% empty %}
+        <p class="text-secondary mt-3 mb-0">No upcoming live classes are scheduled.</p>
+    {% endfor %}
+</section>
 <section class="card p-4">
     <h2 class="h5">Create a portal account</h2>
     <p class="text-secondary">Create a student, teacher, or parent login. For administrator access, create a superuser using <code>python manage.py createsuperuser</code>.</p>
     <form method="post">
         {% csrf_token %}
+        <input type="hidden" name="action" value="create_account">
         {{ form.non_field_errors }}
         <div class="row g-3">
             {% for field in form %}
@@ -31,8 +56,28 @@
     </form>
 </section>
 <section class="card p-4 mt-4">
+    <h2 class="h5">Enroll a student in a subject</h2>
+    <p class="text-secondary">Choose a subject course and student. Their dashboard will show that subject's lessons and scheduled class links.</p>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="enroll">
+        {{ enrollment_form.non_field_errors }}
+        <div class="row g-3">
+            {% for field in enrollment_form %}
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+        </div>
+        <button class="btn btn-primary mt-3" type="submit">Enroll student</button>
+    </form>
+</section>
+<section class="card p-4 mt-4">
     <h2 class="h5">Management</h2>
     <p class="mb-2"><a href="{% url 'admin:accounts_user_changelist' %}">Manage portal users and roles</a></p>
+    <p class="mb-2"><a href="{% url 'admin:courses_liveclass_changelist' %}">Manage live classes</a></p>
     <p class="mb-2"><a href="{% url 'admin:courses_feerecord_changelist' %}">Manage fee records and payment status</a></p>
     <p class="mb-0"><a href="{% url 'admin:courses_enrollment_changelist' %}">Manage course enrollments</a></p>
 </section>

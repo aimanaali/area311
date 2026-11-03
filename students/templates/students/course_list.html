@@ -23,7 +23,7 @@
             <section class="card p-4 h-100">
                 <h2 class="h5">{{ course.title }}</h2>
                 <p class="text-secondary">{{ course.description }}</p>
-                <p class="small mb-3">Teacher: {{ course.teacher.user.get_full_name|default:course.teacher.user.username }}</p>
+                <p class="small mb-3">Subject: {{ course.subject }} · Teacher: {{ course.teacher.user.get_full_name|default:course.teacher.user.username }}</p>
                 <h3 class="h6">Notes and study materials</h3>
                 {% for lesson in course.lessons.all %}
                     <article class="border-top py-3">

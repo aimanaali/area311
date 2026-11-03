@@ -197,6 +197,7 @@ class Command(BaseCommand):
             course, created = Course.objects.get_or_create(
                 title=f'Demo {course_title} (Punjab Grade 6-10)',
                 defaults={
+                    'subject': subject,
                     'description': (
                         f'Demo {course_title} course for Punjab grades 6-10. '
                         'Use the official Punjab textbook links in the student library.'

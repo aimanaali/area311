@@ -1,11 +1,11 @@
 {% extends "accounts/base.html" %}
 {% block title %}Student portal | Area311 LMS{% endblock %}
 {% block content %}
-{% if student %}
+{% if student or is_admin_view %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
     <div>
-        <h1 class="h3 mb-1">Student portal</h1>
-        <p class="text-secondary mb-0">Welcome, {{ request.user.get_full_name|default:request.user.username }} · Grade {{ student.grade }}</p>
+        <h1 class="h3 mb-1">{% if is_admin_view %}Student portal overview{% else %}Student portal{% endif %}</h1>
+        <p class="text-secondary mb-0">Welcome, {{ request.user.get_full_name|default:request.user.username }}{% if student %} · Grade {{ student.grade }}{% endif %}</p>
     </div>
     <a class="btn btn-outline-primary" href="{% url 'students:course_list' %}">Open study library</a>
 </div>
@@ -25,10 +25,10 @@
             <div class="col-lg-6">
                 <article class="border rounded-3 p-3 h-100">
                     <h3 class="h6 mb-1">{{ course.title }}</h3>
-                    <p class="small text-secondary mb-2">Teacher: {{ course.teacher.user.get_full_name|default:course.teacher.user.username }}</p>
+                    <p class="small text-secondary mb-2">Subject: {{ course.subject }} · Teacher: {{ course.teacher.user.get_full_name|default:course.teacher.user.username }}</p>
                     {% for live_class in course.upcoming_live_classes %}
                         <div class="border-top py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
-                            <span><strong>{{ live_class.title }}</strong><span class="d-block small text-secondary">{{ live_class.starts_at }}</span></span>
+                            <span><strong>{{ live_class.title }}</strong><span class="d-block small text-secondary">{{ live_class.starts_at|date:"D, M j, Y · g:i A T" }}</span></span>
                             <a class="btn btn-sm btn-success" href="{{ live_class.meet_url }}" target="_blank" rel="noopener noreferrer">Join class</a>
                         </div>
                     {% empty %}
@@ -48,7 +48,12 @@
             {% for live_class in live_classes %}
                 <article class="border-top py-3">
                     <div class="d-flex flex-wrap justify-content-between gap-2">
-                        <div><strong>{{ live_class.title }}</strong><div class="text-secondary">{{ live_class.course.title }} · {{ live_class.starts_at }}</div></div>
+                        <div>
+                            <strong>{{ live_class.title }}</strong>
+                            <div class="text-secondary">{{ live_class.course.subject }} · {{ live_class.course.title }}</div>
+                            <div class="small text-secondary">Teacher: {{ live_class.course.teacher.user.get_full_name|default:live_class.course.teacher.user.username }}</div>
+                            <div class="small text-secondary">{{ live_class.starts_at|date:"D, M j, Y · g:i A T" }}</div>
+                        </div>
                         <a class="btn btn-sm btn-success align-self-center" href="{{ live_class.meet_url }}" target="_blank" rel="noopener noreferrer">Join Google Meet</a>
                     </div>
                 </article>
@@ -59,11 +64,12 @@
     </div>
     <div class="col-lg-6">
         <section class="card p-4 h-100">
-            <h2 class="h5">Assignments and progress</h2>
+            <h2 class="h5">{% if is_admin_view %}Assignments overview{% else %}Assignments and progress{% endif %}</h2>
             {% for assignment in assignments %}
                 <article class="border-top py-3">
                     <div class="d-flex justify-content-between gap-2">
-                        <div><strong>{{ assignment.title }}</strong><div class="text-secondary">{{ assignment.course.title }} · Due {{ assignment.due_date }}</div></div>
+                        <div><strong>{{ assignment.title }}</strong><div class="text-secondary">{{ assignment.course.subject }} · {{ assignment.course.title }} · Due {{ assignment.due_date }}</div></div>
+                        {% if not is_admin_view %}
                         {% with submission=assignment.student_submissions|first %}
                             <div class="text-end">
                                 {% if submission %}
@@ -78,6 +84,7 @@
                                 {% endif %}
                             </div>
                         {% endwith %}
+                        {% endif %}
                     </div>
                 </article>
             {% empty %}

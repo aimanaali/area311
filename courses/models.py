@@ -5,11 +5,12 @@ from teachers.models import Teacher
 
 class Course(models.Model):
     title = models.CharField(max_length=200)
+    subject = models.CharField(max_length=50, default='General')
     description = models.TextField()
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.title
+        return f'{self.title} ({self.subject})'
 
 
 class Lesson(models.Model):

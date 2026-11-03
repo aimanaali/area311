@@ -25,6 +25,12 @@
             <ul class="navbar-nav me-auto">
                 {% if request.user.is_superuser %}
                     <li class="nav-item"><a class="nav-link" href="{% url 'accounts:admin_dashboard' %}">Administrator</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'students:dashboard' %}">Student portal</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'students:course_list' %}">Study library</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'teachers:dashboard' %}">Teacher portal</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'accounts:parent_dashboard' %}">Parent reports</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'accounts:messages' %}">Messages</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'admin:index' %}">Django admin</a></li>
                 {% elif request.user.role == 'student' %}
                     <li class="nav-item"><a class="nav-link" href="{% url 'students:dashboard' %}">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'students:course_list' %}">Study library</a></li>
