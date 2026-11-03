@@ -74,7 +74,7 @@ ALLOWED_HOSTS=aimansolutionslms.pythonanywhere.com
 The application will refuse to start in production if `SECRET_KEY` or `ALLOWED_HOSTS` is missing. Do not use the example key above; replace it with a securely generated value.
 
 ### Deploying on PythonAnywhere
-1. In the PythonAnywhere **Web** tab, use a Python 3.11 virtualenv and point the WSGI configuration file at this project's `area311.wsgi` module.
+1. In the PythonAnywhere **Web** tab, use a Python 3.11 virtualenv and configure its WSGI file to load this project's `main.wsgi` module (`DJANGO_SETTINGS_MODULE` should be `main.settings`).
 2. In a Bash console, activate that virtualenv, go to the directory containing `manage.py`, and run:
    ```bash
    python -m pip install -r requirements.txt
@@ -128,7 +128,7 @@ Open your browser and navigate to:
 area311/
 │
 ├── accounts/            # User authentication, roles, landing, & messaging
-├── area311/             # Core project configuration (settings, urls, wsgi, asgi)
+├── main/                # Django project configuration (settings, urls, wsgi, asgi)
 ├── courses/             # Course management, study resources, live classes, seed commands
 │   └── management/
 │       └── commands/    # Custom commands (e.g., seed_demo_data.py)
