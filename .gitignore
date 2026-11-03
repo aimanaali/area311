@@ -1,2 +1,7 @@
 # Ignore environment variables file
 .env
+
+# Local database and generated Python bytecode
+db.sqlite3
+__pycache__/
+*.py[cod]
